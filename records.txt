@@ -1,6 +1,1 @@
-﻿$ORIGIN devopsengg.xyz.
-devopsengg.xyz.	900	IN	SOA	ns-1454.awsdns-53.org. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400
-devopsengg.xyz.	172800	IN	NS	ns-1454.awsdns-53.org.
-devopsengg.xyz.	172800	IN	NS	ns-1657.awsdns-15.co.uk.
-devopsengg.xyz.	172800	IN	NS	ns-65.awsdns-08.com.
-devopsengg.xyz.	172800	IN	NS	ns-693.awsdns-22.net.
+

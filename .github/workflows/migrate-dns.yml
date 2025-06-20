@@ -14,12 +14,14 @@ jobs:
     - name: Checkout Repo
       uses: actions/checkout@v3
 
-    - name: Install cli53 binary
+    - name: Install cli53 binary (v0.8.23)
       run: |
         mkdir -p $HOME/.local/bin
-        wget https://github.com/barnybug/cli53/releases/download/0.8.20/cli53-linux-amd64 -O $HOME/.local/bin/cli53
+        wget https://github.com/barnybug/cli53/releases/download/0.8.23/cli53-linux-amd64 \
+          -O $HOME/.local/bin/cli53
         chmod +x $HOME/.local/bin/cli53
         echo "$HOME/.local/bin" >> $GITHUB_PATH
+
 
 
     - name: Export DNS Records from Route 53

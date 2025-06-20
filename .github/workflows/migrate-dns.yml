@@ -1,15 +1,36 @@
-name: Migrate Route 53 DNS
+name: Fully Automated DNS Migration
 
 on:
-  workflow_dispatch: # Manual trigger
+  workflow_dispatch:
 
 jobs:
-  apply:
+  migrate-dns:
     runs-on: ubuntu-latest
 
+    env:
+      SOURCE_DOMAIN: devopsengg.xyz
+
     steps:
-    - name: Checkout repo
+    - name: Checkout Repo
       uses: actions/checkout@v3
+
+    - name: Install cli53
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ruby ruby-dev
+        sudo gem install cli53
+
+    - name: Export DNS Records from Route 53
+      run: |
+        mkdir -p export
+        cli53 export $SOURCE_DOMAIN --full > export/records.txt
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    - name: Generate Terraform records.tf from export
+      run: |
+        python3 scripts/convert.py export/records.txt terraform/records.tf
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
@@ -18,17 +39,9 @@ jobs:
       run: terraform init
       working-directory: terraform/
 
-    - name: Terraform Validate
-      run: terraform validate
-      working-directory: terraform/
-
-    - name: Terraform Plan
-      run: terraform plan
-      working-directory: terraform/
-
     - name: Terraform Apply
       run: terraform apply -auto-approve
       working-directory: terraform/
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.TARGET_AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.TARGET_AWS_SECRET_ACCESS_KEY }}

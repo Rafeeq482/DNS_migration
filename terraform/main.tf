@@ -1,9 +1,9 @@
 provider "aws" {
-  region = "ap-south-1"
+  region = "us-east-1" # any region; Route 53 is global
 }
 
 resource "aws_route53_zone" "new_zone" {
-  name = "devopsengg.xyz"
+  name = var.domain_name
 }
 
-# Include converted records here or in `records.tf`
+# Include all DNS records in records.tf

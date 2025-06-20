@@ -1,14 +1,14 @@
-name: Deploy Route53 DNS Records
+name: Migrate Route 53 DNS
 
 on:
-  workflow_dispatch:   # Manual trigger
+  workflow_dispatch: # Manual trigger
 
 jobs:
-  deploy:
+  apply:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout repo
       uses: actions/checkout@v3
 
     - name: Setup Terraform

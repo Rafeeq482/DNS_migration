@@ -11,5 +11,5 @@ resource "aws_route53_record" "mail" {
   name    = "mail.${var.domain_name}"
   type    = "CNAME"
   ttl     = 300
-  records = ["mail.externalprovider.com"]
+  records = ["mail.externalprovider.com."]
 }

@@ -5,7 +5,11 @@ on:
 
 jobs:
   migrate-dns:
-    runs-on: ubuntu-latest
+    runs-on:
+      - self-hosted
+      - linux
+      - shell  # optional: use only if tagged in your runner config
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -21,7 +25,6 @@ jobs:
           curl -L https://github.com/barnybug/cli53/releases/download/0.8.19/cli53-linux-amd64 -o $HOME/.local/bin/cli53
           chmod +x $HOME/.local/bin/cli53
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-
 
       - name: Export records from source account
         run: |

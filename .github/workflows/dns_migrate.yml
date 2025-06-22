@@ -15,11 +15,13 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: Install CLI53
+      - name: Install CLI53 from GitHub binary
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ruby ruby-dev
-          sudo gem install cli53
+          mkdir -p $HOME/.local/bin
+          curl -L https://github.com/barnybug/cli53/releases/download/0.8.19/cli53-linux-amd64 -o $HOME/.local/bin/cli53
+          chmod +x $HOME/.local/bin/cli53
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
 
       - name: Export records from source account
         run: |

@@ -5,28 +5,42 @@ def convert_to_tf(input_file, output_file):
         lines = f.readlines()
 
     tf_lines = []
-
-    domain = "devopsengg.xyz."  # root domain to exclude from NS records
+    domain = "devopsengg.xyz."
     index = 0
 
     for line in lines:
         if line.startswith("$") or "SOA" in line:
-            continue  # skip $ORIGIN and SOA records
-        if "NS" in line:
-            name, ttl, _, record_type, value = line.split()
-            if name.strip() == domain:
-                continue  # ❌ skip root-level NS records (already auto-created by AWS)
-            resource_name = f"ns_{name.replace('.', '_').strip('_')}_{index}"
-            tf_lines.append(f'''
+            continue
+
+        parts = line.split()
+        if len(parts) < 5:
+            continue
+
+        name, ttl, _, record_type = parts[:4]
+        values = parts[4:]
+
+        if record_type == "NS" and name.strip() == domain:
+            continue
+
+        resource_name = f"{record_type.lower()}_{name.replace('.', '_').strip('_')}_{index}"
+
+        if record_type == "TXT":
+            value_str = ', '.join([f'"{v.strip()}"' for v in values])
+        elif record_type == "MX":
+            value_str = ', '.join([f'"{values[0]} {values[1]}"'])
+        else:
+            value_str = ', '.join([f'"{v.strip()}"' for v in values])
+
+        tf_lines.append(f'''
 resource "aws_route53_record" "{resource_name}" {{
   zone_id = aws_route53_zone.new_zone.zone_id
   name    = "{name}"
   type    = "{record_type}"
   ttl     = {ttl}
-  records = ["{value}"]
+  records = [{value_str}]
 }}
 ''')
-            index += 1
+        index += 1
 
     with open(output_file, "w") as f:
         f.writelines(tf_lines)

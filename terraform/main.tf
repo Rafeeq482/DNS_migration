@@ -1,9 +1,8 @@
 provider "aws" {
-  region = "us-east-1" # any region; Route 53 is global
+  region = "us-east-1"
 }
 
 resource "aws_route53_zone" "new_zone" {
-  name = var.domain_name
+  name    = var.domain_name
+  comment = "Migrated via Terraform"
 }
-
-# Include all DNS records in records.tf

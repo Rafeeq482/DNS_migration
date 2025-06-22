@@ -1,0 +1,48 @@
+name: Migrate DNS Records
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate-dns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install CLI53
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev
+          sudo gem install cli53
+
+      - name: Export records from source account
+        run: |
+          mkdir -p export
+          cli53 export --full devopsengg.xyz > export/records.txt
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_SOURCE }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_SOURCE }}
+
+      - name: Convert records to Terraform format
+        run: |
+          python3 scripts/convert.py export/records.txt terraform/records.tf
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve -var="domain_name=devopsengg.xyz"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEST }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEST }}

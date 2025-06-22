@@ -29,6 +29,10 @@ jobs:
         mkdir -p export
         cli53 export --full devopsengg.xyz > export/records.txt
 
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
     - name: Convert records.txt to Terraform
       run: |
         python3 scripts/convert.py export/records.txt terraform/records.tf

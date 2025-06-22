@@ -5,11 +5,7 @@ on:
 
 jobs:
   migrate-dns:
-    runs-on:
-      - self-hosted
-      - linux
-      - shell  # optional: use only if tagged in your runner config
-
+    runs-on: self-hosted
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3

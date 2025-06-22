@@ -26,8 +26,8 @@ jobs:
           mkdir -p export
           cli53 export --full devopsengg.xyz > export/records.txt
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_SOURCE }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_SOURCE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Convert records to Terraform format
         run: |
@@ -44,5 +44,5 @@ jobs:
         working-directory: terraform
         run: terraform apply -auto-approve -var="domain_name=devopsengg.xyz"
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEST }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEST }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TARGET_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TARGET_AWS_SECRET_ACCESS_KEY }}

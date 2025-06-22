@@ -6,6 +6,7 @@ on:
 jobs:
   migrate-dns:
     runs-on: self-hosted
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -22,6 +23,9 @@ jobs:
           chmod +x $HOME/.local/bin/cli53
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Install iconv
+        run: sudo apt-get update && sudo apt-get install -y gettext
+
       - name: Export records from source account
         run: |
           mkdir -p export
@@ -30,9 +34,15 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Convert records to Terraform format
+      - name: Convert encoding from UTF-16 to UTF-8
         run: |
-          python3 scripts/convert.py export/records.txt terraform/records.tf
+          iconv -f UTF-16 -t UTF-8 export/records.txt -o export/records_utf8.txt
+
+        - name: Convert records to Terraform format
+          run: |
+            pip install chardet
+            python3 scripts/convert.py export/records_utf8.txt terraform/records.tf
+
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

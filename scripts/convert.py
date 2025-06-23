@@ -1,44 +1,14 @@
 import sys
-
-def convert_to_tf(input_file, output_file):
-    with open(input_file, "r", encoding="utf-16") as f:  # 👈 fix encoding
-        lines = f.readlines()
-
-    tf_lines = []
-    index = 0
-    for line in lines:
-        if line.startswith("$") or "SOA" in line:
-            continue  # skip ORIGIN and SOA
-        if "NS" in line:
-            name, ttl, _, record_type, value = line.split()
-            resource_name = f"ns_{name.replace('.', '_').strip('_')}_{index}"
-            tf_lines.append(f'''
-resource "aws_route53_record" "{resource_name}" {{
-  zone_id = aws_route53_zone.new_zone.zone_id
-  name    = "{name}"
-  type    = "{record_type}"
-  ttl     = {ttl}
-  records = ["{value}"]
-}}
-''')
-            index += 1
-
-    with open(output_file, "w") as f:
-        f.writelines(tf_lines)
-
-if __name__ == "__main__":
-    convert_to_tf(sys.argv[1], sys.argv[2])
-import sys
 import chardet
 
-def convert_to_tf(input_file, output_file):
-    # Step 1: Detect encoding
-    with open(input_file, 'rb') as raw_file:
-        raw_data = raw_file.read()
+def detect_encoding(file_path):
+    with open(file_path, 'rb') as f:
+        raw_data = f.read()
         result = chardet.detect(raw_data)
-        encoding = result['encoding']
+        return result['encoding']
 
-    # Step 2: Decode using detected encoding
+def convert_to_tf(input_file, output_file):
+    encoding = detect_encoding(input_file)
     with open(input_file, 'r', encoding=encoding) as f:
         lines = f.readlines()
 
@@ -46,9 +16,12 @@ def convert_to_tf(input_file, output_file):
     index = 0
     for line in lines:
         if line.startswith("$") or "SOA" in line:
-            continue  # skip ORIGIN and SOA
+            continue
         if "NS" in line:
-            name, ttl, _, record_type, value = line.split()
+            parts = line.split()
+            if len(parts) < 5:
+                continue
+            name, ttl, _, record_type, value = parts
             resource_name = f"ns_{name.replace('.', '_').strip('_')}_{index}"
             tf_lines.append(f'''
 resource "aws_route53_record" "{resource_name}" {{

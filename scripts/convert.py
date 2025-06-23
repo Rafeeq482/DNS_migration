@@ -1,7 +1,12 @@
 import sys
+import chardet
 
 def convert_to_tf(input_file, output_file):
-    with open(input_file, "r", encoding="utf-8", errors="ignore") as f:
+    # Detect encoding automatically
+    raw = open(input_file, "rb").read()
+    encoding = chardet.detect(raw)["encoding"]
+
+    with open(input_file, "r", encoding=encoding, errors="ignore") as f:
         lines = f.readlines()
 
     tf_lines = []
@@ -15,14 +20,17 @@ def convert_to_tf(input_file, output_file):
 
         parts = line.strip().split()
         if len(parts) < 5:
-            continue
+            continue  # Skip malformed
 
         name, ttl, _, record_type, *values = parts
         value = " ".join(values).strip('"')
-        value = value.replace('\\100', '@')  # decode any escaped @ symbol
+
+        # Handle escaped names like \100.devopsengg.xyz. -> @.devopsengg.xyz.
+        name = name.replace("\\100", "@")
 
         resource_name = f"{record_type.lower()}_{name.replace('.', '_').strip('_')}_{index}"
 
+        # Terraform block
         tf_lines.append(f'''
 resource "aws_route53_record" "{resource_name}" {{
   zone_id = aws_route53_zone.new_zone.zone_id

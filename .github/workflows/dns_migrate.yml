@@ -23,24 +23,17 @@ jobs:
           chmod +x $HOME/.local/bin/cli53
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install iconv
-        run: sudo apt-get install -y gettext
-
-      - name: Export records from source account
+      - name: Export DNS Records from Source
         run: |
           mkdir -p export
-          cli53 export --full devopsengg.xyz --file export/records.txt
+          cli53 export --full devopsengg.xyz > export/records.txt
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Convert encoding to UTF-8
+      - name: Convert Records to Terraform Format
         run: |
-          iconv -f UTF-16 -t UTF-8 export/records.txt -o export/records_utf8.txt
-
-      - name: Convert to Terraform
-        run: |
-          python3 scripts/convert.py export/records_utf8.txt terraform/records.tf
+          python3 scripts/convert.py export/records.txt terraform/records.tf
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

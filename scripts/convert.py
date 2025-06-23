@@ -1,6 +1,10 @@
 import sys
+import os
 
 def convert_to_tf(input_file, output_file):
+    print(f"📥 Reading from: {os.path.abspath(input_file)}")
+    print(f"📤 Writing to: {os.path.abspath(output_file)}")
+
     with open(input_file, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
 
@@ -11,7 +15,8 @@ def convert_to_tf(input_file, output_file):
         if line.startswith("$") or "SOA" in line:
             continue
         if "NS" in line and line.startswith("devopsengg.xyz."):
-            continue  # Skip apex/root NS
+            continue  # Skip apex/root NS records
+
         parts = line.strip().split()
         if len(parts) < 5:
             continue

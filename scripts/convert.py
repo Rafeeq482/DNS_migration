@@ -15,7 +15,7 @@ def convert_to_tf(input_file, output_file):
         if line.startswith("$") or "SOA" in line:
             continue
         if "NS" in line and line.startswith("devopsengg.xyz."):
-            continue  # Skip apex/root NS records
+            continue  # Skip root NS records
 
         parts = line.strip().split()
         if len(parts) < 5:
@@ -27,7 +27,7 @@ def convert_to_tf(input_file, output_file):
 
         tf_lines.append(f'''
 resource "aws_route53_record" "{resource_name}" {{
-  zone_id = aws_route53_zone.new_zone.zone_id
+  zone_id = data.aws_route53_zone.existing_zone.zone_id
   name    = "{name}"
   type    = "{record_type}"
   ttl     = {ttl}

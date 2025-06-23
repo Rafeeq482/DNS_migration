@@ -38,10 +38,10 @@ jobs:
         run: |
           iconv -f UTF-16 -t UTF-8 export/records.txt -o export/records_utf8.txt
 
-        - name: Convert records to Terraform format
-          run: |
-            pip install chardet
-            python3 scripts/convert.py export/records_utf8.txt terraform/records.tf
+      - name: Convert records to Terraform format
+        run: |
+          pip install chardet
+          python3 scripts/convert.py export/records_utf8.txt terraform/records.tf
 
 
       - name: Setup Terraform

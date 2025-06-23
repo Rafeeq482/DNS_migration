@@ -1,1 +1,4 @@
 cli53 export --full devopsengg.xyz > records.txt
+
+cli53 export --full devopsengg.xyz > export/records.txt
+python scripts/convert.py export/records.txt terraform/records.tf

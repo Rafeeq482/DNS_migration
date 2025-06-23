@@ -1,4 +1,4 @@
-name: Debug DNS Migration
+name: Migrate DNS Records
 
 on:
   workflow_dispatch:
@@ -8,47 +8,65 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout code
+      - name: 🧾 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: 🐍 Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      - name: Install CLI53
+      - name: 🛠️ Install CLI53
         run: |
           mkdir -p $HOME/.local/bin
           curl -L https://github.com/barnybug/cli53/releases/download/0.8.19/cli53-linux-amd64 -o $HOME/.local/bin/cli53
           chmod +x $HOME/.local/bin/cli53
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Export Route53 Records
+      - name: 📦 Install iconv (gettext)
+        run: sudo apt-get update && sudo apt-get install -y gettext
+
+      - name: 📤 Export Route53 records from source
         run: |
           mkdir -p export
           cli53 export --full devopsengg.xyz > export/records.txt
-          echo "---- Exported Records ----"
+          echo "✅ Exported records.txt:"
           cat export/records.txt
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Run convert.py
+      - name: 🔄 Convert encoding to UTF-8 (optional fallback)
         run: |
-          python3 scripts/convert.py export/records.txt terraform/records.tf
-          echo "---- Terraform Records Generated ----"
+          iconv -f UTF-16 -t UTF-8 export/records.txt -o export/records_utf8.txt || cp export/records.txt export/records_utf8.txt
+          echo "✅ Final UTF-8 file:"
+          file export/records_utf8.txt
+          cat export/records_utf8.txt
+
+      - name: 🧠 Convert to Terraform format
+        run: |
+          mkdir -p terraform
+          python3 scripts/convert.py export/records_utf8.txt terraform/records.tf
+          echo "✅ Final terraform/records.tf:"
           cat terraform/records.tf
 
-      - name: Setup Terraform
+      - name: 🔧 Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Init
+      - name: 🏗️ Terraform Init
         working-directory: terraform
         run: terraform init
 
-      - name: Terraform Apply
+      - name: 🚀 Terraform Apply
         working-directory: terraform
         run: terraform apply -auto-approve -var="domain_name=devopsengg.xyz"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.TARGET_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.TARGET_AWS_SECRET_ACCESS_KEY }}
+
+      - name: 🧪 Debug Output
+        run: |
+          echo "📁 Final workspace structure:"
+          tree -a
+          echo "📄 terraform/records.tf content:"
+          cat terraform/records.tf

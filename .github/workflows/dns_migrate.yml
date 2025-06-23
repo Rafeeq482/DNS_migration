@@ -11,12 +11,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      - name: Install CLI53 from GitHub binary
+      - name: Install CLI53
         run: |
           mkdir -p $HOME/.local/bin
           curl -L https://github.com/barnybug/cli53/releases/download/0.8.19/cli53-linux-amd64 -o $HOME/.local/bin/cli53
@@ -24,7 +24,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install iconv
-        run: sudo apt-get update && sudo apt-get install -y gettext
+        run: sudo apt-get install -y gettext
 
       - name: Export records from source account
         run: |
@@ -34,15 +34,13 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Convert encoding from UTF-16 to UTF-8
+      - name: Convert encoding to UTF-8
         run: |
           iconv -f UTF-16 -t UTF-8 export/records.txt -o export/records_utf8.txt
 
-      - name: Convert records to Terraform format
+      - name: Convert to Terraform
         run: |
-          pip install chardet
           python3 scripts/convert.py export/records_utf8.txt terraform/records.tf
-
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -53,10 +51,7 @@ jobs:
 
       - name: Terraform Apply
         working-directory: terraform
-        run: |
-          terraform plan -var="domain_name=devopsengg.xyz"
-          terraform apply -auto-approve -var="domain_name=devopsengg.xyz"
-
+        run: terraform apply -auto-approve -var="domain_name=devopsengg.xyz"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.TARGET_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.TARGET_AWS_SECRET_ACCESS_KEY }}

@@ -9,17 +9,18 @@ def convert_to_tf(input_file, output_file):
 
     for line in lines:
         if line.startswith("$") or "SOA" in line:
-            continue
+            continue  # Skip $ORIGIN and SOA
         if "NS" in line and line.startswith("devopsengg.xyz."):
-            continue
+            continue  # Skip root NS records
 
         parts = line.strip().split()
         if len(parts) < 5:
-            print(f"Skipping malformed line: {line.strip()}")
             continue
 
         name, ttl, _, record_type, *values = parts
         value = " ".join(values).strip('"')
+        value = value.replace('\\100', '@')  # decode any escaped @ symbol
+
         resource_name = f"{record_type.lower()}_{name.replace('.', '_').strip('_')}_{index}"
 
         tf_lines.append(f'''

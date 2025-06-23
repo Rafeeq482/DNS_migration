@@ -1,12 +1,7 @@
 import sys
-import chardet
 
 def convert_to_tf(input_file, output_file):
-    # Detect encoding automatically
-    raw = open(input_file, "rb").read()
-    encoding = chardet.detect(raw)["encoding"]
-
-    with open(input_file, "r", encoding=encoding, errors="ignore") as f:
+    with open(input_file, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
 
     tf_lines = []
@@ -14,23 +9,17 @@ def convert_to_tf(input_file, output_file):
 
     for line in lines:
         if line.startswith("$") or "SOA" in line:
-            continue  # Skip $ORIGIN and SOA
+            continue
         if "NS" in line and line.startswith("devopsengg.xyz."):
-            continue  # Skip root NS records
-
+            continue  # Skip apex/root NS
         parts = line.strip().split()
         if len(parts) < 5:
-            continue  # Skip malformed
+            continue
 
         name, ttl, _, record_type, *values = parts
         value = " ".join(values).strip('"')
-
-        # Handle escaped names like \100.devopsengg.xyz. -> @.devopsengg.xyz.
-        name = name.replace("\\100", "@")
-
         resource_name = f"{record_type.lower()}_{name.replace('.', '_').strip('_')}_{index}"
 
-        # Terraform block
         tf_lines.append(f'''
 resource "aws_route53_record" "{resource_name}" {{
   zone_id = aws_route53_zone.new_zone.zone_id

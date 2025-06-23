@@ -1,4 +1,4 @@
-name: Migrate DNS Records
+name: Debug DNS Migration
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Setup Python
@@ -23,17 +23,21 @@ jobs:
           chmod +x $HOME/.local/bin/cli53
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Export DNS Records from Source
+      - name: Export Route53 Records
         run: |
           mkdir -p export
           cli53 export --full devopsengg.xyz > export/records.txt
+          echo "---- Exported Records ----"
+          cat export/records.txt
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Convert Records to Terraform Format
+      - name: Run convert.py
         run: |
           python3 scripts/convert.py export/records.txt terraform/records.tf
+          echo "---- Terraform Records Generated ----"
+          cat terraform/records.tf
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

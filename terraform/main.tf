@@ -2,7 +2,8 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_route53_zone" "new_zone" {
-  name    = var.domain_name
-  comment = "Migrated via Terraform"
+# Reference the EXISTING hosted zone in the destination account
+data "aws_route53_zone" "existing_zone" {
+  name         = var.domain_name
+  private_zone = false
 }

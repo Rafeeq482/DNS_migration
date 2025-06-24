@@ -49,7 +49,7 @@ jobs:
 
       - name: 🚀 Terraform Apply
         working-directory: terraform
-        run: terraform apply -auto-approve -var="domain_name=devopsengg.xyz" 
+        run: terraform apply -auto-approve -var="domain_name=devopsengg.xyz" -var="zone_id=Z0037588267268L2SG4T6"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.TARGET_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.TARGET_AWS_SECRET_ACCESS_KEY }}

@@ -35,7 +35,7 @@ def convert_to_tf(input_file, output_file):
 
         tf_lines.append(f'''
 resource "aws_route53_record" "{resource_name}" {{
-  zone_id = data.aws_route53_zone.existing_zone.zone_id
+  zone_id = var.zone_id
   name    = "{name}"
   type    = "{record_type}"
   ttl     = {ttl}

@@ -23,9 +23,6 @@ jobs:
           chmod +x $HOME/.local/bin/cli53
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: 📦 Install iconv (gettext)
-        run: sudo apt-get update && sudo apt-get install -y gettext
-
       - name: 📤 Export Route53 records from source
         run: |
           mkdir -p export
@@ -36,17 +33,10 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: 🔄 Convert encoding to UTF-8 (optional fallback)
-        run: |
-          iconv -f UTF-16 -t UTF-8 export/records.txt -o export/records_utf8.txt || cp export/records.txt export/records_utf8.txt
-          echo "✅ Final UTF-8 file:"
-          file export/records_utf8.txt
-          cat export/records_utf8.txt
-
       - name: 🧠 Convert to Terraform format
         run: |
           mkdir -p terraform
-          python3 scripts/convert.py export/records_utf8.txt terraform/records.tf
+          python3 scripts/convert.py export/records.txt terraform/records.tf
           echo "✅ Final terraform/records.tf:"
           cat terraform/records.tf
 

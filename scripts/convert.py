@@ -15,7 +15,7 @@ def convert_to_tf(input_file, output_file):
         if line.startswith("$") or "SOA" in line:
             continue
         if "NS" in line and line.startswith("devopsengg.xyz."):
-            continue  # Skip root NS records
+            continue  # Skip apex NS
 
         parts = line.strip().split()
         if len(parts) < 5:
@@ -23,7 +23,7 @@ def convert_to_tf(input_file, output_file):
 
         name, ttl, _, record_type, *values = parts
         value = " ".join(values).strip('"')
-        resource_name = f"{record_type.lower()}_{name.replace('.', '_').strip('_')}_{index}"
+        resource_name = f"{record_type.lower()}_{name.replace('.', '_').replace('@','at').strip('_')}_{index}"
 
         tf_lines.append(f'''
 resource "aws_route53_record" "{resource_name}" {{
@@ -35,7 +35,7 @@ resource "aws_route53_record" "{resource_name}" {{
 }}''')
         index += 1
 
-    with open(output_file, "w") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write("\n".join(tf_lines))
 
 if __name__ == "__main__":

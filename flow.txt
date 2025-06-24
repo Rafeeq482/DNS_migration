@@ -1,0 +1,37 @@
+┌──────────────────────────────┐
+│ Start Workflow (Manual)     │◄──────────────────────┐
+└────────────┬────────────────┘                       │
+             │                                        │
+             ▼                                        │
+┌──────────────────────────────┐                      │
+│ Checkout Code (GitHub Repo) │                      │
+└────────────┬────────────────┘                      │
+             ▼                                        │
+┌────────────────────────────────────────────────────┐
+│ Export Records from Old Hosted Zone                │
+│ - Find old Hosted Zone ID using AWS CLI            │
+│ - Export DNS records using cli53                   │
+│ - Filter out NS and SOA records                    │
+└────────────┬───────────────────────────────────────┘
+             ▼
+┌────────────────────────────────────────────────────┐
+│ Create New Hosted Zone                             │
+│ - Use AWS CLI to create hosted zone                │
+│ - Extract new Hosted Zone ID from response         │
+└────────────┬───────────────────────────────────────┘
+             ▼
+┌────────────────────────────────────────────────────┐
+│ Import Records into New Hosted Zone                │
+│ - Use cli53 to import filtered records             │
+│ - Use --replace to overwrite any existing records  │
+└────────────┬───────────────────────────────────────┘
+             ▼
+┌────────────────────────────────────────────────────┐
+│ Output New NS Records                              │
+│ - Use AWS CLI to fetch NS records of new zone      │
+│ - Needed to update at domain registrar             │
+└────────────┬───────────────────────────────────────┘
+             ▼
+       ┌──────────────┐
+       │     End      │
+       └──────────────┘

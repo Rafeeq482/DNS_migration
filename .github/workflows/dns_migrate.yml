@@ -1,63 +1,67 @@
-name: Migrate DNS Records
+name: Route53 Hosted Zone Migration
 
 on:
   workflow_dispatch:
+    inputs:
+      domain_name:
+        description: 'Domain to migrate'
+        required: true
+        default: 'devopsengg.xyz'
 
 jobs:
   migrate-dns:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
 
     steps:
-      - name: 🧾 Checkout Repository
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: 🐍 Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
 
-      - name: 🛠️ Install CLI53
-        run: |
-          mkdir -p $HOME/.local/bin
-          curl -L https://github.com/barnybug/cli53/releases/download/0.8.19/cli53-linux-amd64 -o $HOME/.local/bin/cli53
-          chmod +x $HOME/.local/bin/cli53
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Install cli53
+      run: |
+        sudo apt update
+        sudo apt install -y ruby ruby-dev
+        sudo gem install cli53
 
-      - name: 📤 Export Route53 records from source
-        run: |
-          mkdir -p export
-          cli53 export --full devopsengg.xyz > export/records.txt
-          echo "✅ Exported records.txt:"
-          cat export/records.txt
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Export records from old hosted zone
+      id: export
+      run: |
+        echo "Finding hosted zone ID..."
+        HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name ${{ github.event.inputs.domain_name }} --query "HostedZones[0].Id" --output text | cut -d'/' -f3)
+        echo "OLD_ZONE_ID=$HOSTED_ZONE_ID" >> $GITHUB_ENV
 
-      - name: 🧠 Convert to Terraform format
-        run: |
-          mkdir -p terraform
-          python3 scripts/convert.py export/records.txt terraform/records.tf
-          echo "✅ Final terraform/records.tf:"
-          cat terraform/records.tf
+        echo "Exporting records..."
+        cli53 export --full ${{ github.event.inputs.domain_name }} > records.txt
+        grep -v -E 'IN[[:space:]]+(NS|SOA)' records.txt > filtered_records.txt
 
-      - name: 🔧 Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+    - name: Create new hosted zone
+      id: create
+      run: |
+        echo "Creating new hosted zone..."
+        NEW_ZONE_JSON=$(aws route53 create-hosted-zone \
+          --name ${{ github.event.inputs.domain_name }} \
+          --caller-reference "$(date +%s)" \
+          --output json)
 
-      - name: 🏗️ Terraform Init
-        working-directory: terraform
-        run: terraform init
+        NEW_ZONE_ID=$(echo $NEW_ZONE_JSON | jq -r '.HostedZone.Id' | cut -d'/' -f3)
+        echo "NEW_ZONE_ID=$NEW_ZONE_ID" >> $GITHUB_ENV
+        echo "Hosted Zone created: $NEW_ZONE_ID"
 
-      - name: 🚀 Terraform Apply
-        working-directory: terraform
-        run: terraform apply -auto-approve -var="domain_name=devopsengg.xyz" -var="zone_id=Z0037588267268L2SG4T6"
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.TARGET_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.TARGET_AWS_SECRET_ACCESS_KEY }}
+    - name: Import records into new hosted zone
+      run: |
+        echo "Importing records..."
+        cli53 import --file filtered_records.txt --replace $NEW_ZONE_ID
 
-
-      - name: 🧪 Debug Output
-        run: |
-          echo "📁 Final workspace structure:"
-          tree -a
-          echo "📄 terraform/records.tf content:"
-          cat terraform/records.tf
+    - name: Output new NS records
+      run: |
+        echo "Fetching new NS records..."
+        aws route53 get-hosted-zone --id $NEW_ZONE_ID --query 'DelegationSet.NameServers'

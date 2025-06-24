@@ -1,5 +1,9 @@
 import sys
 import os
+import re
+
+def sanitize(name):
+    return re.sub(r'[^a-zA-Z0-9_]', '_', name)
 
 def convert_to_tf(input_file, output_file):
     print(f"📥 Reading from: {os.path.abspath(input_file)}")
@@ -15,7 +19,7 @@ def convert_to_tf(input_file, output_file):
         if line.startswith("$") or "SOA" in line:
             continue
         if "NS" in line and line.startswith("devopsengg.xyz."):
-            continue  # Skip apex NS
+            continue  # Skip root NS records
 
         parts = line.strip().split()
         if len(parts) < 5:
@@ -23,7 +27,11 @@ def convert_to_tf(input_file, output_file):
 
         name, ttl, _, record_type, *values = parts
         value = " ".join(values).strip('"')
-        resource_name = f"{record_type.lower()}_{name.replace('.', '_').replace('@','at').strip('_')}_{index}"
+
+        # Fix \100 and similar
+        name = name.replace("\\", "\\\\")
+        value = value.replace("\\", "\\\\")
+        resource_name = f"{record_type.lower()}_{sanitize(name)}_{index}"
 
         tf_lines.append(f'''
 resource "aws_route53_record" "{resource_name}" {{

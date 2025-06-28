@@ -42,6 +42,11 @@ jobs:
         echo "NEW_ZONE_ID=$NEW_ZONE_ID" >> $GITHUB_ENV
         echo "Hosted Zone created: $NEW_ZONE_ID"
 
+    - name: Modify A record IP before import
+      run: |
+        echo "Modifying A record..."
+        sed -i 's/15\.206\.67\.40/54.196.223.69/' filtered_records.txt
+
     - name: Import records into new hosted zone
       run: |
         echo "Importing records..."

@@ -41,6 +41,26 @@ jobs:
         NEW_ZONE_ID=$(echo $NEW_ZONE_JSON | jq -r '.HostedZone.Id' | cut -d'/' -f3)
         echo "NEW_ZONE_ID=$NEW_ZONE_ID" >> $GITHUB_ENV
         echo "Hosted Zone created: $NEW_ZONE_ID"
+    
+    - name: Create Route 53 Health Check
+      id: health_check
+      run: |
+        echo "Creating health check for 54.196.223.69..."
+        HEALTH_CHECK_ID=$(aws route53 create-health-check \
+          --caller-reference "$(date +%s)" \
+          --health-check-config '{
+            "IPAddress": "54.196.223.69",
+            "Port": 80,
+            "Type": "HTTP",
+            "ResourcePath": "/",
+            "RequestInterval": 30,
+            "FailureThreshold": 3
+          }' \
+          --query 'HealthCheck.Id' --output text)
+
+        echo "HEALTH_CHECK_ID=$HEALTH_CHECK_ID" >> $GITHUB_ENV
+        echo "Health check created: $HEALTH_CHECK_ID"
+
 
 
     - name: Import records into new hosted zone
